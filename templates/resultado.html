@@ -1,54 +1,580 @@
-<h2>CMC</h2>
-<ul>
-  {% for r in resumo %}
-    <li>CMC {{ r.CMC_Label }}: {{ r.Quantidade }} cartas ({{ r.Pontos_Totais }} pts)</li>
-  {% endfor %}
-</ul>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado da Validação - {{ deck_nome }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<p>Total de pontos: {{ total }}</p>
-<p>Status: {{ "Legal" if legal else "Ilegal" }}</p>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-<h2>Estirpe</h2>
-{% if faltantes %}
-  <ul>
-    {% for c in faltantes %}
-      <li>{{ c.Nome }} — {{ c.Tipo }}</li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p>OK</p>
-{% endif %}
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
 
-<h2>Combos</h2>
-<p>
-  {% if combo is true %}Deck com combo
-  {% elif combo is false %}Deck sem combo
-  {% else %}Não foi possível verificar{% endif %}
-</p>
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
 
-<h2>Reserved List</h2>
-{% if reserved %}
-  <ul>
-    {% for c in reserved %}
-      <li>{{ c.Nome }}</li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p>OK</p>
-{% endif %}
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
 
-<h2>GC</h2>
-{% if gc %}
-  <ul>
-    {% for c in gc %}
-      <li>{{ c.Nome }}</li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p>OK</p>
-{% endif %}
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
 
+        .deck-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
 
-<form action="/" method="get">
-  <button type="submit">Voltar</button>
-</form>
+        .deck-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .content {
+            padding: 30px;
+            display: grid;
+            gap: 30px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e1e1e1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h2 i {
+            font-size: 1.3em;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-valid {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-invalid {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background: #f5f7ff;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-label {
+            width: 50px;
+            font-weight: 600;
+        }
+
+        .chart-bar-inner {
+            flex: 1;
+            height: 30px;
+            background: #e1e1e1;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chart-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 15px;
+            transition: width 1s ease;
+        }
+
+        .chart-value {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .messages {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .message {
+            padding: 10px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+        }
+
+        .timestamp {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .deck-info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Resultado da Validação</h1>
+            <p>{{ deck_nome }} • Estirpe: {{ estirpe }}</p>
+        </div>
+
+        <div class="deck-info">
+            <h3>📋 Resumo do Deck</h3>
+            <div class="deck-info-grid">
+                <div class="info-item">
+                    <div class="info-label">Pontos CMC</div>
+                    <div class="info-value">{{ "%.1f"|format(total) }}</div>
+                    <span class="status-badge {{ 'status-valid' if legal else 'status-invalid' }}">
+                        {{ 'VÁLIDO' if legal else 'INVÁLIDO' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Combos</div>
+                    <div class="info-value">{{ combo or 'Não verificado' }}</div>
+                    {% if combo_detectado is not none %}
+                    <span class="status-badge {{ 'status-valid' if combo_detectado else 'status-warning' }}">
+                        {{ 'OK' if combo_detectado else 'ATENÇÃO' }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Criaturas sem estirpe</div>
+                    <div class="info-value">{{ qtd_faltantes }}</div>
+                    <span class="status-badge {{ 'status-valid' if qtd_faltantes == 0 else 'status-warning' }}">
+                        {{ 'OK' if qtd_faltantes == 0 else 'ATENÇÃO' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Reserved List</div>
+                    <div class="info-value">{{ qtd_reserved }}</div>
+                    <span class="status-badge {{ 'status-valid' if qtd_reserved == 0 else 'status-warning' }}">
+                        {{ 'OK' if qtd_reserved == 0 else 'ATENÇÃO' }}
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Game Changers</div>
+                    <div class="info-value">{{ qtd_gc }}</div>
+                    <span class="status-badge {{ 'status-valid' if qtd_gc == 0 else 'status-warning' }}">
+                        {{ 'OK' if qtd_gc == 0 else 'ATENÇÃO' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Seção CMC -->
+            <div class="section">
+                <h2><i>📈</i> Distribuição de CMC</h2>
+
+                {% if resumo %}
+                <div class="chart-container">
+                    {% for item in resumo %}
+                    <div class="chart-bar">
+                        <div class="chart-label">CMC {{ item.CMC_Label if 'CMC_Label' in item else item.CMC }}</div>
+                        <div class="chart-bar-inner">
+                            {% set total_qtd = resumo|sum(attribute='Quantidade') %}
+                            {% set percentage = (item.Quantidade / total_qtd * 100)|round(1) if total_qtd > 0 else 0 %}
+                            <div class="chart-fill" style="width: {{ percentage }}%;"></div>
+                            <div class="chart-value">{{ item.Quantidade }} cartas ({{ percentage }}%)</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>CMC</th>
+                            <th>Quantidade</th>
+                            <th>Pontos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in resumo %}
+                        <tr>
+                            <td>{{ item.CMC_Label if 'CMC_Label' in item else item.CMC }}</td>
+                            <td>{{ item.Quantidade }}</td>
+                            <td>{{ item.Pontos_Totais }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr style="font-weight: bold; background: #f8f9fa;">
+                            <td>TOTAL</td>
+                            <td>{{ resumo|sum(attribute='Quantidade') }}</td>
+                            <td>{{ "%.1f"|format(total) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-message">
+                    Nenhuma criatura encontrada para análise de CMC
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Seção Estirpe -->
+            <div class="section">
+                <h2><i>🔍</i> Verificação de Estirpe</h2>
+                <p>Criaturas que não contêm "{{ estirpe }}" no tipo ou texto:</p>
+
+                {% if faltantes %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Carta</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for carta in faltantes %}
+                        <tr>
+                            <td>{{ carta.Nome }}</td>
+                            <td>{{ carta.Tipo }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-message">
+                    ✅ Todas as criaturas contêm a estirpe "{{ estirpe }}"!
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Seção Reserved List -->
+            <div class="section">
+                <h2><i>⚠️</i> Reserved List</h2>
+
+                {% if reserved %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Carta</th>
+                            <th>Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for carta in reserved %}
+                        <tr>
+                            <td>{{ carta.Nome }}</td>
+                            <td>{{ carta.Quantidade if 'Quantidade' in carta else 1 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-message">
+                    ✅ Nenhuma carta da Reserved List encontrada!
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Seção Game Changer -->
+            <div class="section">
+                <h2><i>⭐</i> Game Changers (GC)</h2>
+
+                {% if gc %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Carta</th>
+                            <th>Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for carta in gc %}
+                        <tr>
+                            <td>{{ carta.Nome }}</td>
+                            <td>{{ carta.Quantidade if 'Quantidade' in carta else 1 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-message">
+                    ✅ Nenhuma Game Changer encontrada!
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Seção Mensagens com Data/Hora -->
+            <div class="section">
+                <h2><i>📝</i> Log da Validação</h2>
+                <div class="timestamp">
+                    📅 Data e hora da validação: {{ timestamp }}
+                </div>
+                {% if mensagens %}
+                <div class="messages">
+                    {% for msg in mensagens %}
+                    <div class="message">{{ msg }}</div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-message">
+                    Nenhuma mensagem adicional registrada durante a validação.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Ações -->
+            <div class="actions">
+                <a href="/" class="btn btn-primary">
+                    <i>🔙</i> Validar Outro Deck
+                </a>
+
+                {% if deck_nome %}
+                    {% set nome_parts = deck_nome.split('_') %}
+                    {% set moxfield_id = nome_parts[-1] if nome_parts|length > 0 else '' %}
+                    {% if moxfield_id %}
+                        <a href="https://moxfield.com/decks/{{ moxfield_id }}" target="_blank" class="btn btn-secondary">
+                            <i>🏰</i> Ver Deck no Moxfield
+                        </a>
+                    {% else %}
+                        <a href="https://www.moxfield.com/" target="_blank" class="btn btn-secondary">
+                            <i>🏰</i> Ir para Moxfield
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <a href="https://www.moxfield.com/" target="_blank" class="btn btn-secondary">
+                        <i>🏰</i> Ir para Moxfield
+                    </a>
+                {% endif %}
+
+                <button onclick="window.print()" class="btn btn-success">
+                    <i>🖨️</i> Imprimir Resultado
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Validação concluída com sucesso</p>
+            <p>Os resultados são baseados nas regras atuais de estirpe EDH</p>
+        </div>
+    </div>
+
+    <script>
+        // Anima as barras do gráfico
+        document.addEventListener('DOMContentLoaded', function() {
+            const bars = document.querySelectorAll('.chart-fill');
+            bars.forEach(bar => {
+                const originalWidth = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = originalWidth;
+                }, 100);
+            });
+
+            // Adiciona tooltips para as badges
+            const badges = document.querySelectorAll('.status-badge');
+            badges.forEach(badge => {
+                badge.title = badge.textContent;
+            });
+        });
+    </script>
+</body>
+</html>

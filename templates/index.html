@@ -1,9 +1,288 @@
-<form method="post">
-  <label>Deck URL</label>
-  <input name="deck_url" required>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador de Decks EDH</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  <label>Estirpe</label>
-  <input name="estirpe" required>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-  <button type="submit">Analisar</button>
-</form>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 1.1em;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-loading {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .error-box {
+            background: #fee;
+            border-left: 4px solid #e74c3c;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            color: #c0392b;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            color: #155724;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+        }
+
+        .api-link {
+            display: inline-block;
+            margin-top: 15px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .api-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Validador de Decks EDH</h1>
+            <p>Analise seu deck do Moxfield e verifique conformidade com regras de estirpe</p>
+        </div>
+
+        <div class="content">
+            {% if error %}
+            <div class="error-box">
+                <strong>Erro:</strong> {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/" id="validationForm">
+                <div class="form-group">
+                    <label for="deck_url">📋 URL do Deck (Moxfield):</label>
+                    <input type="text" id="deck_url" name="deck_url"
+                           placeholder="https://www.moxfield.com/decks/..."
+                           required>
+                </div>
+
+                <div class="form-group">
+                    <label for="estirpe">🏷️ Estirpe do Deck:</label>
+                    <input type="text" id="estirpe" name="estirpe"
+                           placeholder="Ex: Elf, Dragon, Wizard..."
+                           required>
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">
+                    🔍 Validar Deck
+                </button>
+            </form>
+
+            <div class="loading" id="loadingIndicator">
+                <div class="loading-spinner"></div>
+                <p>Validando deck... Isso pode levar alguns segundos.</p>
+            </div>
+
+            <div class="info-box">
+                <h3>📖 Como usar:</h3>
+                <p>1. Copie a URL do seu deck público do Moxfield</p>
+                <p>2. Digite a estirpe/tribo principal do seu deck</p>
+                <p>3. Clique em "Validar Deck" para analisar</p>
+
+                <h3 style="margin-top: 20px;">📊 O que é validado:</h3>
+                <p>• Distribuição de CMC (40-100 pontos)</p>
+                <p>• Criaturas contêm a estirpe no tipo ou texto</p>
+                <p>• Combos simples vs complexos</p>
+                <p>• Cartas da Reserved List</p>
+                <p>• Game Changers (GC)</p>
+            </div>
+
+            <!--
+            <a href="/status" class="api-link" target="_blank">🔗 Ver status da API</a>
+            -->
+        </div>
+
+        <div class="footer">
+            <p>Desenvolvido para a Kindred War 3</p>
+            <p>Utiliza as APIs do Moxfield e Commander Spellbook</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('validationForm').addEventListener('submit', function() {
+            // Mostra indicador de carregamento
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('submitBtn').classList.add('btn-loading');
+            document.getElementById('submitBtn').innerHTML = '⏳ Processando...';
+        });
+
+        // Exemplo de URL para teste
+        window.addEventListener('DOMContentLoaded', function() {
+            // Preenche campos de exemplo se estiver em desenvolvimento
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('example')) {
+                document.getElementById('deck_url').value = 'https://www.moxfield.com/decks/SEU_DECK_ID_AQUI';
+                document.getElementById('estirpe').value = 'Elf';
+            }
+        });
+    </script>
+</body>
+</html>
