@@ -147,27 +147,56 @@ def verificar_combo_commanderspellbook_df(df):
 
     return 0 < total_ids <= 2
 
+def carregar_lista_txt(caminho_txt):
+    with open(caminho_txt, encoding="utf-8") as f:
+        return {linha.strip().lower() for linha in f if linha.strip()}
 
-def rodar_validacoes(df):
+def verificar_reserved_list_df(df, caminho_reserved_txt):
+    reserved = carregar_lista_txt(caminho_reserved_txt)
+
+    if 'Nome' not in df.columns:
+        return df.iloc[0:0][['Nome']]
+
+    mask = df['Nome'].str.lower().isin(reserved)
+
+    return df.loc[mask, ['Nome']]
+
+def verificar_gc_df(df, caminho_gc_txt):
+    gc = carregar_lista_txt(caminho_gc_txt)
+
+    if 'Nome' not in df.columns:
+        return df.iloc[0:0][['Nome']]
+
+    mask = df['Nome'].str.lower().isin(gc)
+
+    return df.loc[mask, ['Nome']]
+
+
+
+def rodar_validacoes(df, caminho_reserved_txt="reserved.txt", caminho_gc_txt="gc.txt"):
     estirpe = df.loc[0, 'Estirpe']
 
-    print("\n=== CMC ===")
+    # CMC
     resumo, total, legal = validar_deck_por_cmc_df(df)
-    print(resumo)
-    print("Total pontos:", total)
-    print("Deck legal" if legal else "Deck ilegal")
 
-    print("\n=== ESTIRPE ===")
-    faltantes = verificar_string_em_creatures_df(df, estirpe)
-    print("OK" if faltantes.empty else faltantes)
+    # Estirpe
+    faltantes_estirpe = verificar_string_em_creatures_df(df, estirpe)
 
-    print("\n=== COMBOS ===")
+    # Combos
     combo = verificar_combo_commanderspellbook_df(df)
 
-    if combo is True:
-        print("Deck com combo")
-    elif combo is False:
-        print("Deck sem combo")
-    else:
-        print("Não foi possível verificar combos")
+    # Reserved / GC
+    reserved_hits = verificar_reserved_list_df(df, caminho_reserved_txt)
+    gc_hits = verificar_gc_df(df, caminho_gc_txt)
+
+    return {
+        "resumo": resumo,
+        "total": total,
+        "legal": legal,
+        "faltantes_estirpe": faltantes_estirpe,
+        "combo": combo,
+        "reserved_hits": reserved_hits,
+        "gc_hits": gc_hits,
+    }
+
 

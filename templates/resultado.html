@@ -26,6 +26,29 @@
   {% else %}Não foi possível verificar{% endif %}
 </p>
 
+<h2>Reserved List</h2>
+{% if reserved %}
+  <ul>
+    {% for c in reserved %}
+      <li>{{ c.Nome }}</li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>OK</p>
+{% endif %}
+
+<h2>GC</h2>
+{% if gc %}
+  <ul>
+    {% for c in gc %}
+      <li>{{ c.Nome }}</li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>OK</p>
+{% endif %}
+
+
 <form action="/" method="get">
   <button type="submit">Voltar</button>
 </form>
