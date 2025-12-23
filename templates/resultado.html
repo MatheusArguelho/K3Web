@@ -1,0 +1,31 @@
+<h2>CMC</h2>
+<ul>
+  {% for r in resumo %}
+    <li>CMC {{ r.CMC_Label }}: {{ r.Quantidade }} cartas ({{ r.Pontos_Totais }} pts)</li>
+  {% endfor %}
+</ul>
+
+<p>Total de pontos: {{ total }}</p>
+<p>Status: {{ "Legal" if legal else "Ilegal" }}</p>
+
+<h2>Estirpe</h2>
+{% if faltantes %}
+  <ul>
+    {% for c in faltantes %}
+      <li>{{ c.Nome }} — {{ c.Tipo }}</li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>OK</p>
+{% endif %}
+
+<h2>Combos</h2>
+<p>
+  {% if combo is true %}Deck com combo
+  {% elif combo is false %}Deck sem combo
+  {% else %}Não foi possível verificar{% endif %}
+</p>
+
+<form action="/" method="get">
+  <button type="submit">Voltar</button>
+</form>
